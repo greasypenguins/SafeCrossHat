@@ -34,14 +34,14 @@ print("1")
 camera = PiCamera()
 print("2")
 camera.resolution = (width, height)
-camera.framerate = 1/15 # One frame every 15 s
+camera.framerate = 20
 print("3")
 rawCapture = PiRGBArray(camera, size=(width, height))
 print("Width: {}".format(width))
 print("Height: {}".format(height))
 
 # Allow the camera to warm up
-time.sleep(0.2)
+time.sleep(1)
 
 # Capture an image
 camera.capture(rawCapture, format="bgr")
