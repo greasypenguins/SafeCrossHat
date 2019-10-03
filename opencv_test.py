@@ -111,6 +111,7 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
 	
 	# Show the frame
 	cv2.imshow("Video", image)
+	cv2.imwrite(str(time.time()) + ".jpg", image)
 	
 	# If the 'q' key was pressed, end the program
 	key = cv2.waitKey(1) & 0xFF
