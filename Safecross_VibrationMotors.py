@@ -19,10 +19,11 @@ GPIO.output(15,GPIO.LOW)
 GPIO.cleanup()
 """
 
+ GPIO.setmode(GPIO.BOARD)
+ GPIO.setup(15, GPIO.OUT)
+
 for x in range(20):
     if x > 5 and x < 15:
-        GPIO.setmode(GPIO.BOARD)
-        GPIO.setup(15, GPIO.OUT)
         GPIO.output(15, GPIO.HIGH)
     else:
         GPIO.output(15,GPIO.LOW)
