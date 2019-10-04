@@ -27,5 +27,5 @@ for x in range(20):
         GPIO.output(15, GPIO.HIGH)
     else:
         GPIO.output(15,GPIO.LOW)
-        GPIO.cleanup()
+GPIO.cleanup()
         
