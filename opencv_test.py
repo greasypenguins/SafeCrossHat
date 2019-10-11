@@ -66,8 +66,11 @@ net = cv2.dnn.readNet("yolov3.weights", "yolov3.cfg")
 rawCapture.truncate(0)
 
 for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+	capture_time = time.time()
+	
 	print("Captured image. Processing...")
 	image = rawCapture.array
+	#cv2.imwrite("temp/pre/" + str(capture_time) + ".jpg", image)
 	
 	# Detect objects
 	blob = cv2.dnn.blobFromImage(image, scale, (416,416), (0,0,0), True, crop=False)
@@ -111,7 +114,7 @@ for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=
 	
 	# Show the frame
 	cv2.imshow("Video", image)
-	cv2.imwrite(str(time.time()) + ".jpg", image)
+	#cv2.imwrite("temp/post/" + str(capture_time) + ".jpg", image)
 	
 	# If the 'q' key was pressed, end the program
 	key = cv2.waitKey(1) & 0xFF
