@@ -176,11 +176,6 @@ try:
         # Clear buffer for the next frame
         rawCapture.truncate(0)
         
-        for i, _ in enumerate(times):
-            if i == 0:
-                continue
-            print("Time {}-{}: {}".format(i-1, i, round(times[i] - times[i - 1], 3)))
-        
         print("Capturing new image")
 
 except:
