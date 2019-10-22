@@ -319,22 +319,22 @@ def rotate_camera():
     global LOOKING_LEFT
     
     if LOOKING_LEFT:
-        # Currently set to 0 degrees (left)
-        # Move camera to 90 degrees (right)
-        set_servo_degrees(94)
+        # Currently set to 90 degrees (left)
+        # Move camera to 0 degrees (right)
+        set_servo_degrees(19.0)
         LOOKING_LEFT = False
         
     else:
-        # Currently set to 90 degrees (right)
-        # Move camera to 0 degrees (left)
-        set_servo_degrees(19.0)
+        # Currently set to 0 degrees (right)
+        # Move camera to 90 degrees (left)
+        set_servo_degrees(94.0)
         LOOKING_LEFT = True
 
     return
 
 def set_servo_degrees(deg):
     global P
-    print(deg)
+
     dc_0   =  2.5 # Duty cycle for   0 degrees
     dc_180 = 12.5 # Duty cycle for 180 degrees
 
