@@ -16,7 +16,9 @@ import time
 # Plug MOSFET gates into these pins (board numbering):
 # BE VERY CAREFUL!
 MOTOR_PINS = [11, 13]
-SERVO_PIN = 7
+SIGNAL_I_PIN = 15 # Connect to 16 on the other Pi
+SIGNAL_O_PIN = 16 # Connect to 15 on the other Pi
+SERVO_PIN = 7     # Not used on Pi 2
 P = None
 
 CLASSES = None
@@ -43,14 +45,16 @@ def main():
     global P
     global PI
     global SAVE_IMAGES
+    global LOOKING_LEFT
     
     # Process command-line arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "pi",
         help="Which Pi this is.\n"
-        "1: Master Pi controlling the servo motor\n"
-        "2: Slave Pi not controlling the servo motor\n"
+        "0: Test mode. Rotate motor but do not use sync signals.\n"
+        "1: Controls the servo motor and synchronizes with Pi 2.\n"
+        "2: Synchronizes with Pi 1."
         )
     parser.add_argument(
         "-v",
@@ -67,9 +71,10 @@ def main():
         )
     args = parser.parse_args()
     
-    if (args.pi != "1") and (args.pi != "2"):
-        raise Exception("Pi argument must be \"1\" or \"2\"")
     PI = int(args.pi)
+    if (PI not in (0, 1, 2)):
+        raise Exception("Invalid argument \"pi\". Use --help for help.")
+        
     OUTPUT_VIDEO = args.video
     SAVE_IMAGES = args.save
 
@@ -84,9 +89,14 @@ def main():
         GPIO.setup(pin, GPIO.OUT)
         GPIO.output(pin, GPIO.LOW)
 
-    GPIO.setup(SERVO_PIN,GPIO.OUT) # Set servo GPIO pin as PWM output
-    P = GPIO.PWM(SERVO_PIN, 50) # 50 Hz PWM
-    P.start(7.5) # Set duty cycle of 7.5 for neutral position
+    if PI in (0, 1):
+        GPIO.setup(SERVO_PIN,GPIO.OUT) # Set servo GPIO pin as PWM output
+        P = GPIO.PWM(SERVO_PIN, 50) # 50 Hz PWM
+        P.start(7.5) # Set duty cycle of 7.5 for neutral position
+
+    if PI in (1, 2):
+        GPIO.setup(SIGNAL_I_PIN, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+        GPIO.setup(SIGNAL_O_PIN, GPIO.OUT)
 
     # Initialize the camera
     width = 640
@@ -138,16 +148,55 @@ def main():
 
     try:
         for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-            rotate_camera()
+
+            # Synchronize Pis
+            if PI == 1:
+                # Wait for "OK to rotate" signal
+                while not GPIO.input(SIGNAL_I_PIN):
+                    pass
+                # Rotate servo
+                rotate_servo()
+                # Signal new "direction"
+                if LOOKING_LEFT:
+                    print("Looking left")
+                    GPIO.output(SIGNAL_O_PIN, GPIO.HIGH)
+                else:
+                    print("Looking right")
+                    GPIO.output(SIGNAL_O_PIN, GPIO.LOW)
+                
+            elif PI == 2:
+                # Signal "OK to rotate"
+                GPIO.output(SIGNAL_O_PIN, GPIO.HIGH)
+                # Wait for "direction" signal to change
+                if LOOKING_LEFT:
+                    while GPIO.input(SIGNAL_I_PIN):
+                        pass
+                    print("Looking right")
+                else:
+                    while not GPIO.input(SIGNAL_I_PIN):
+                        pass
+                    print("Looking left")
+                LOOKING_LEFT = not LOOKING_LEFT
+                # Stop signaling "OK to rotate"
+                GPIO.output(SIGNAL_O_PIN, GPIO.LOW)
+                
+            else:
+                # Test mode, just rotate servo
+                rotate_servo()
+                pass
             
             capture_time = time.time()
 
             image = rawCapture.array
             if SAVE_IMAGES:
                 cv2.imwrite(
-                "{}/temp/pre/{}.jpg".format(PATH_PREFIX, str(capture_time)),
-                image
-                )
+                    "{}/temp/pre/{}.jpg".format
+                        (
+                        PATH_PREFIX,
+                        str(capture_time)
+                        ),
+                    image
+                    )
             
             # Preprocess image
             blob = cv2.dnn.blobFromImage(
@@ -315,7 +364,7 @@ def vibrate_motors(detected_ids):
 
     return
 
-def rotate_camera():
+def rotate_servo():
     global LOOKING_LEFT
     
     if LOOKING_LEFT:
