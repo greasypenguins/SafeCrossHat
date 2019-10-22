@@ -15,5 +15,5 @@ try:
                 time.sleep(1)
                 p.ChangeDutyCycle(2.5) #duty cycle at 2.5 for 0 degrees
                 time.sleep(1)
-except KeyboardInterrupt
+except KeyboardInterrupt:
         GPIO.cleanup()

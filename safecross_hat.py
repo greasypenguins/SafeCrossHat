@@ -7,6 +7,7 @@
 import argparse
 import cv2
 import numpy as np
+import os.path
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import RPi.GPIO as GPIO
@@ -15,6 +16,8 @@ import time
 # Plug MOSFET gates into these pins (board numbering):
 # BE VERY CAREFUL!
 MOTOR_PINS = [11, 13]
+SERVO_PIN = 7
+P = None
 
 CLASSES = None
 COLORS = None
@@ -30,11 +33,14 @@ VEHICLE_CLASSES = [
     "truck"
     ]
 VEHICLE_IDS = set()
+PATH_PREFIX = os.path.dirname(os.path.abspath(__file__))
+print(PATH_PREFIX)
 
 def main():
     global CLASSES
     global COLORS
     global OUTPUT_VIDEO
+    global P
     global PI
     global SAVE_IMAGES
     
@@ -78,6 +84,10 @@ def main():
         GPIO.setup(pin, GPIO.OUT)
         GPIO.output(pin, GPIO.LOW)
 
+    GPIO.setup(SERVO_PIN,GPIO.OUT) # Set servo GPIO pin as PWM output
+    P = GPIO.PWM(SERVO_PIN, 50) # 50 Hz PWM
+    P.start(7.5) # Set duty cycle of 7.5 for neutral position
+
     # Initialize the camera
     width = 640
     height = 416
@@ -101,12 +111,15 @@ def main():
     nms_threshold = 0.4
 
     # Setup opencv model
-    with open("yolov3.txt", 'r') as f:
+    with open("{}/yolov3.txt".format(PATH_PREFIX), 'r') as f:
         CLASSES = [line.strip() for line in f.readlines()]
 
     COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 3))
 
-    net = cv2.dnn.readNet("yolov3-tiny.weights", "yolov3-tiny.cfg")
+    net = cv2.dnn.readNet(
+        "{}/yolov3-tiny.weights".format(PATH_PREFIX),
+        "{}/yolov3-tiny.cfg".format(PATH_PREFIX)
+        )
 
     output_layers = get_output_layers(net)
 
@@ -132,7 +145,7 @@ def main():
             image = rawCapture.array
             if SAVE_IMAGES:
                 cv2.imwrite(
-                "temp/pre/" + str(capture_time) + ".jpg",
+                "{}/temp/pre/{}.jpg".format(PATH_PREFIX, str(capture_time)),
                 image
                 )
             
@@ -189,7 +202,7 @@ def main():
                 h = box[3]
                 if w * h > 10:
                     detected_ids.add(i)
-                if OUTPUT_VIDEO:
+                if OUTPUT_VIDEO or SAVE_IMAGES:
                     draw_prediction(
                         image,
                         class_ids[i],
@@ -206,7 +219,7 @@ def main():
                 cv2.imshow("Video", image)
             if SAVE_IMAGES:
                 cv2.imwrite(
-                    "temp/post/" + str(capture_time) + ".jpg",
+                    "{}/temp/post/{}.jpg".format(PATH_PREFIX, str(capture_time)),
                     image
                     )
 
@@ -230,14 +243,20 @@ def main():
         GPIO.cleanup()
         camera.close()
         raise
+    
+    return
 
 def turn_motor_on(motor):
     #WMH: Brandon may modify/remove this
     GPIO.output(MOTOR_PINS[motor], GPIO.HIGH)
 
+    return
+
 def turn_motor_off(motor):
     #WMH: Brandon may modify/remove this
     GPIO.output(MOTOR_PINS[motor], GPIO.LOW)
+
+    return
 
 def get_output_layers(net):
     layer_names = net.getLayerNames()
@@ -269,6 +288,8 @@ def draw_prediction(img, class_id, x, y, x_plus_w, y_plus_h):
         2
         )
 
+    return
+
 def vibrate_motors(detected_ids):
     #WMH: Brandon may modify this to take in the heights and widths and
     #WMH: do PWM patterns
@@ -292,24 +313,36 @@ def vibrate_motors(detected_ids):
             # No vehicles on the right
             turn_motor_off(1)
 
+    return
+
 def rotate_camera():
     global LOOKING_LEFT
     
     if LOOKING_LEFT:
         # Currently set to 0 degrees (left)
         # Move camera to 90 degrees (right)
-        set_servo_degrees(90)
+        set_servo_degrees(94)
         LOOKING_LEFT = False
         
     else:
         # Currently set to 90 degrees (right)
         # Move camera to 0 degrees (left)
-        set_servo_degrees(0)
+        set_servo_degrees(19.0)
         LOOKING_LEFT = True
 
+    return
+
 def set_servo_degrees(deg):
-    #WMH: Brandon will implement this
-    pass
+    global P
+    print(deg)
+    dc_0   =  2.5 # Duty cycle for   0 degrees
+    dc_180 = 12.5 # Duty cycle for 180 degrees
+
+    dc = (deg / 180.0) * (dc_180 - dc_0) + dc_0
+    
+    P.ChangeDutyCycle(dc)
+    
+    return
 
 if __name__ == "__main__":
     main()
