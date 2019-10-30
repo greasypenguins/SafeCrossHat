@@ -1,0 +1,9 @@
+[Unit]
+Description=Run SafeCross Hat script
+After=multi-user.target
+
+[Service]
+ExecStart=/bin/bash -c '/usr/bin/python3 /home/pi/git/SafeCrossHat/safecross_hat.py 1 -s | tee /home/pi/git/SafeCrossHat/boot.log'
+
+[Install]
+WantedBy=multi-user.target
