@@ -1,3 +1,7 @@
 https://www.dexterindustries.com/howto/run-a-program-on-your-raspberry-pi-at-startup/#systemd
 
+To enable safecross hat service:
+sudo systemctl daemon-reload
+sudo systemctl enable safecross_hat.service
+sudo reboot
 
