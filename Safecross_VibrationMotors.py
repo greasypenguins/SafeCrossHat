@@ -28,7 +28,7 @@ try:
             time.sleep(3)
             print("Board Pin 13 turns off")
             GPIO.output(13,GPIO.LOW)
-except KeyboardInterrupt        
+except KeyboardInterrupt:
      GPIO.cleanup()
 
 
