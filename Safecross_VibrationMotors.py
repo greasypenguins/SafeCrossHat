@@ -19,7 +19,7 @@ try:
             time.sleep(3)
             print("Board Pin 11 turns off")
             GPIO.output(11,GPIO.LOW)
-        elif area < b
+        elif area < b:
             print("Assigning Board Pin 13")
             GPIO.setup(13,GPIO.OUT)
             print("Board Pin 13 turns on")
