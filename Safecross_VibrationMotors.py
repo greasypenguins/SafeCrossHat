@@ -37,13 +37,13 @@ for i, b in enumerate(boxes[0]):
         approx_distance = round(((1-(boxes[0][i][3] - boxes[0][i][1]))**4),1)
         cv2.putText(image_np,'{}'.format(approx_distance),(int(mid_y*450),int(mid_x*800)),cv2.FONT_HERSEY_SIMPLEX, 0.7, (255,255,255), 2)
         
-        if approx_distance >0.5 and <0.7#detecting if in trajectory
+        if approx_distance >0.9#detecting if in trajectory
             #motor pins 11 and 13 for both pi's
             GPIO.setup(11,GPIO.OUT) #set board pin 11 as output
             GPIO.output(11, on)#turns on board pin 11
             GPIO.setup(13,GPIO.OUT) #set board pin 13 as output
             GPIO.output(13, off)#turns off board pin 13
-        elif approx_distance <1 and >0.8
+        elif approx_distance <0.8
             GPIO.setup(11,GPIO.OUT) #set board pin 11 as output
             GPIO.output(11, off)#turns off board pin 11
             GPIO.setup(13,GPIO.OUT) #set board pin 13 as output
