@@ -9,7 +9,7 @@ h = height
 on = GPIO.HIGH
 off = GPIO.LOW
 
-int pos = 0 #duty cycle position
+pos = 0 #duty cycle position
 
 p = GPIO.PWM(7,50) #set pin 7 with 50 Hz
 p.start(7.5) #set duty cycle of 7.5 for neutral position
