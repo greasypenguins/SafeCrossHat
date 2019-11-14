@@ -21,6 +21,8 @@ SIGNAL_O_PIN = 16 # Connect to 15 on the other Pi
 SERVO_PIN = 7     # Not used on Pi 2
 P = None
 
+CONFIDENCE_THRESHOLD = 0.5
+
 CLASSES = None
 COLORS = None
 LOOKING_LEFT = True
@@ -223,7 +225,7 @@ def main():
                     scores = detection[5:]
                     class_id = np.argmax(scores)
                     confidence = scores[class_id]
-                    if confidence > 0.5:
+                    if confidence > CONFIDENCE_THRESHOLD:
                         center_x = int(detection[0] * width)
                         center_y = int(detection[1] * height)
                         w = int(detection[2] * width)
@@ -241,7 +243,9 @@ def main():
                 nms_threshold
                 )
 
-            detected_ids = set()
+            vehicle_ids = list()
+            vehicle_boxes = list()
+            vehicle_confidences = list()
             for i in indices:
                 i = i[0]
                 box = boxes[i]
@@ -249,8 +253,10 @@ def main():
                 y = box[1]
                 w = box[2]
                 h = box[3]
-                if w * h > 10:
-                    detected_ids.add(i)
+                if class_ids[i] in VEHICLE_IDS:
+                    vehicle_boxes.append(box)
+                    vehicle_ids.append(class_ids[i])
+                    vehicle_confidences.append(confidences[i])
                 if OUTPUT_VIDEO or SAVE_IMAGES:
                     draw_prediction(
                         image,
@@ -261,7 +267,7 @@ def main():
                         round(y+h)
                         )
 
-            vibrate_motors(detected_ids, confidences, boxes)
+            vibrate_motors(vehicle_ids, vehicle_boxes, vehicle_confidences)
             
             # Output the frame
             if OUTPUT_VIDEO:
@@ -339,15 +345,8 @@ def draw_prediction(img, class_id, x, y, x_plus_w, y_plus_h):
 
     return
 
-def vibrate_motors(detected_ids, confidences, boxes):
-    #WMH: Brandon may modify this to take in the heights and widths and
-    #WMH: do PWM patterns
-    for i in detected_ids:
-        print("    Detected {}".format(CLASSES[i]))
-        
-    detected_vehicle_ids = VEHICLE_IDS.intersection(detected_ids)
-
-    if detection(confidences, boxes):
+def vibrate_motors(vehicle_ids, vehicle_boxes, vehicle_confidences):
+    if detection(vehicle_ids, vehicle_boxes, vehicle_confidences):
         if LOOKING_LEFT:
             # Vehicle detected on the left
             turn_motor_on(0)
@@ -393,25 +392,22 @@ def set_servo_degrees(deg):
     
     return
     
-def detection(confidences, boxes):
+def detection(ids, boxes, confidences):
     #Determining vehicle distance
-    for i, _ in enumerate(boxes[0]):
-        if CLASSES[i] in VEHICLE_CLASSES:
-            
-            if confidence[0][i]>=0.5:
-                #finding mid point of car
-                mid_x = (boxes[0][i][1]+boxes[0][i][3])/2
-                mid_y = (boxes[0][i][0]+boxes[0][i][2])/2
-                #approx_distance based on percentage on what is closes
-                approx_distance = round(((1-(boxes[0][i][3] - boxes[0][i][1]))**4),1)
-                cv2.putText(image_np,'{}'.format(approx_distance),(int(mid_y*450),int(mid_x*800)),cv2.FONT_HERSEY_SIMPLEX, 0.7, (255,255,255), 2)
-                
-                if approx_distance <0.8:#detecting if distance is less then 0.9
-                    return true
-                    if mid_x> 0.4 and mid_x<0.5:
-                        #warning text display
-                        cv2.putText(image_np, 'WARNING!!!', (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), 3)
-    return false
+    for i, class_id in enumerate(ids):
+        print("    Detected {}".format(CLASSES[class_id]))
+        print("    Confidence {}".format(confidences[i]))
+        box = boxes[i]
+        x = box[0]
+        y = box[1]
+        w = box[2]
+        h = box[3]
+        print("    X {} | Y {} | W {} | H {}".format(x, y, w, h))
+        
+        if w > 120: #Detecting if width is greater than threshold
+            return True
+    
+    return False
     
 if __name__ == "__main__":
     main()
