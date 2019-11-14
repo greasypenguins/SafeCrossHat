@@ -261,7 +261,7 @@ def main():
                         round(y+h)
                         )
 
-            vibrate_motors(detected_ids)
+            vibrate_motors(detected_ids, confidences, boxes)
             
             # Output the frame
             if OUTPUT_VIDEO:
@@ -339,15 +339,15 @@ def draw_prediction(img, class_id, x, y, x_plus_w, y_plus_h):
 
     return
 
-def vibrate_motors(detected_ids):
+def vibrate_motors(detected_ids, confidences, boxes):
     #WMH: Brandon may modify this to take in the heights and widths and
     #WMH: do PWM patterns
     for i in detected_ids:
         print("    Detected {}".format(CLASSES[i]))
         
     detected_vehicle_ids = VEHICLE_IDS.intersection(detected_ids)
-    
-    if len(detected_vehicle_ids) > 0:
+
+    if detection(confidences, boxes):
         if LOOKING_LEFT:
             # Vehicle detected on the left
             turn_motor_on(0)
@@ -392,6 +392,26 @@ def set_servo_degrees(deg):
     P.ChangeDutyCycle(dc)
     
     return
-
+    
+def detection(confidences, boxes):
+    #Determining vehicle distance
+    for i, _ in enumerate(boxes[0]):
+        if CLASSES[i] in VEHICLE_CLASSES:
+            
+            if confidence[0][i]>=0.5:
+                #finding mid point of car
+                mid_x = (boxes[0][i][1]+boxes[0][i][3])/2
+                mid_y = (boxes[0][i][0]+boxes[0][i][2])/2
+                #approx_distance based on percentage on what is closes
+                approx_distance = round(((1-(boxes[0][i][3] - boxes[0][i][1]))**4),1)
+                cv2.putText(image_np,'{}'.format(approx_distance),(int(mid_y*450),int(mid_x*800)),cv2.FONT_HERSEY_SIMPLEX, 0.7, (255,255,255), 2)
+                
+                if approx_distance <0.8:#detecting if distance is less then 0.9
+                    return true
+                    if mid_x> 0.4 and mid_x<0.5:
+                        #warning text display
+                        cv2.putText(image_np, 'WARNING!!!', (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,0,255), 3)
+    return false
+    
 if __name__ == "__main__":
     main()
